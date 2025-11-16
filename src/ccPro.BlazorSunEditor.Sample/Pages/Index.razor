@@ -1,0 +1,20 @@
+﻿@page "/"
+
+<PageTitle>CcPro.BlazorSunEditor</PageTitle>
+
+
+<h1>
+    CcPro.BlazorSunEditor
+</h1>
+
+<SunEditor @bind-Value="body" Media=false />
+
+<br />
+
+<div class="bg-light p-2">
+    @body
+</div>
+
+@code {
+    string body = "<h1>Hello!<h1>";
+}

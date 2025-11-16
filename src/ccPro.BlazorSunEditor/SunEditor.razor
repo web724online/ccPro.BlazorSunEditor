@@ -1,0 +1,161 @@
+﻿@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<div id="@ElementId"></div>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter] public bool UndoRedo { get; set; } = true;
+    [Parameter] public bool Formatting { get; set; } = true;
+    [Parameter] public bool FontTools { get; set; } = true;
+    [Parameter] public bool Colors { get; set; } = true;
+    [Parameter] public bool Align { get; set; } = true;
+    [Parameter] public bool Lists { get; set; } = true;
+    [Parameter] public bool Tables { get; set; } = true;
+    [Parameter] public bool Media { get; set; } = true;
+    [Parameter] public bool CodePrint { get; set; } = true;
+    [Parameter] public bool FullScreen { get; set; } = true;
+
+    private string ElementId = "suneditor_" + Guid.NewGuid().ToString("N");
+    private bool ScriptsLoaded = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await EnsureScriptsLoaded();
+
+            var buttonList = BuildButtonList();
+
+            var options = new Dictionary<string, object>
+        {
+            { "initialContent", Value },
+            { "buttonList", buttonList }
+        };
+
+            await JS.InvokeVoidAsync(
+                "SunEditorInterop.create",
+                ElementId,
+                DotNetObjectReference.Create(this),
+                options
+            );
+
+        }
+
+    }
+
+    [JSInvokable]
+    public async Task OnContentChanged(string content)
+    {
+        if (content != Value)
+        {
+            Value = content;
+            await ValueChanged.InvokeAsync(content);
+        }
+    }
+
+
+    private List<object> BuildButtonList()
+    {
+        var list = new List<object>();
+
+        if (UndoRedo)
+            list.Add(new[] { "undo", "redo" });
+
+        if (Formatting)
+            list.Add(new[] { "bold", "underline", "italic", "strike", "subscript", "superscript" });
+
+        if (FontTools)
+            list.Add(new[] { "font", "fontSize", "formatBlock" });
+
+        if (Colors)
+            list.Add(new[] { "fontColor", "hiliteColor" });
+
+        if (Align)
+            list.Add(new[] { "align", "horizontalRule" });
+
+        if (Lists)
+            list.Add(new[] { "list", "outdent", "indent" });
+
+        if (Tables)
+            list.Add(new[] { "table" });
+
+        if (Media)
+            list.Add(new[] { "link", "image", "video", "audio" });
+
+        if (CodePrint)
+            list.Add(new[] { "codeView", "preview", "print" });
+
+        if (FullScreen)
+            list.Add(new[] { "fullScreen" });
+
+        return list;
+    }
+
+    private async Task EnsureScriptsLoaded()
+    {
+        if (ScriptsLoaded)
+            return;
+
+        await JS.InvokeVoidAsync("eval", @"
+        window._suneditorLoadPromises = window._suneditorLoadPromises || {};
+
+        function loadScript(id, src) {
+            if (window._suneditorLoadPromises[id]) {
+                return window._suneditorLoadPromises[id];
+            }
+
+            window._suneditorLoadPromises[id] = new Promise((resolve) => {
+                if (document.getElementById(id))
+                    return resolve();
+
+                var script = document.createElement('script');
+                script.id = id;
+                script.src = src;
+                script.onload = resolve;
+                document.head.appendChild(script);
+            });
+
+            return window._suneditorLoadPromises[id];
+        }
+
+        function loadCss(id, href) {
+            if (document.getElementById(id))
+                return;
+
+            var link = document.createElement('link');
+            link.id = id;
+            link.rel = 'stylesheet';
+            link.href = href;
+            document.head.appendChild(link);
+        }
+
+        loadCss('suneditor-css', '_content/ccPro.BlazorSunEditor/suneditor/suneditor.min.css');
+
+        loadScript('suneditor-js', '_content/ccPro.BlazorSunEditor/suneditor/suneditor.min.js')
+            .then(() => loadScript('suneditor-interop', '_content/ccPro.BlazorSunEditor/suneditor/suneditor-blazor.js'));
+    ");
+
+        await WaitForInteropReady();
+
+        ScriptsLoaded = true;
+    }
+
+    private async Task WaitForInteropReady()
+    {
+        for (int i = 0; i < 30; i++) // 30 × 100ms = 3 seconds max
+        {
+            var ready = await JS.InvokeAsync<bool>("eval", "window.SunEditorInterop !== undefined");
+            if (ready)
+                return;
+
+            await Task.Delay(100);
+        }
+
+        throw new Exception("SunEditorInterop was not loaded.");
+    }
+
+
+}

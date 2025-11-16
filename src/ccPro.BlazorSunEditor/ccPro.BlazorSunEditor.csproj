@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+
+		<PackageId>ccPro.BlazorSunEditor</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>YourName</Authors>
+		<Description>A Blazor WebAssembly wrapper for SunEditor WYSIWYG editor</Description>
+		<PackageTags>blazor wysiwyg suneditor editor</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/YourRepo/ccPro.BlazorSunEditor</RepositoryUrl>
+	</PropertyGroup>
+
+
+	<ItemGroup>
+		<SupportedPlatform Include="browser" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.36" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.36" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="wwwroot\**" Pack="true" PackagePath="wwwroot" />
+	</ItemGroup>
+</Project>
